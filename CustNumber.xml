@@ -1,14 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <voicemail>
-<!-- innovaphone Customer Number Self Learning == innovaphone AG kwa 2017 -->
+<!-- innovaphone Customer Number Self Learning == innovaphone AG kwa 2018 -->
 	
 	<function define="Switch">
-		<assign out="$TargedNoCode" value="21"/>
+		<assign out="$TargedNoCode" value="35123"/>
 		<assign out="$TargedCodeOK" value="36"/>
 		<assign out="$WellKnown" value="36"/>
 		<assign out="$CodeLength" value="6"/>
 		<assign out="$SetupCode" value="*"/>
 		<assign out="$MarkDigit" value="#"/>
+		<assign out="$CheckCaller" value="True"/>
+		<assign out="$WriteLog" value=""/>
 	</function>  
 
 	<function define="Main">
@@ -25,7 +27,9 @@
 		<if notcond="$error">
 	            <pbx-xfer e164="$WellKnown" />
         	</if>
-		<call name="CheckCaller" />  
+		<if cond="$CheckCaller">
+			<call name="CheckCaller" />  
+		</if>
 		<assign out="$SndTry" value="True"/>
 		<call name="EnterCode" />  
 		<call name="CheckCode" />  
@@ -166,8 +170,13 @@
 	</function>  
 	<function define="okTrans">	
 		<lib-strcat string="$cgpn" string2="#" out-string="$cgpn" />
-		<lib-strcat string="$cgpn" string2="$code" out-string="$cgpn" />
+		<!-- lib-strcat string="$cgpn" string2="$code" out-string="$cgpn" / -->
+<lib-strcat string="$cgpn" string2="$cdpn" out-string="$cgpn" />
 		<pbx-prepcallinfo cgpn="$cgpn" />
+		<assign out="$myLog" value="$TargedCodeOK" />
+		<if cond="$WriteLog">
+			<call name="LogWrite" />
+		</if>
 		<pbx-xfer e164="$TargedCodeOK" />
 	</function>  
 	<function define="NotokTrans">	
@@ -179,7 +188,57 @@
 				<pbx-prepcallinfo cgpn="$cgpn" />
 			</case >
 		</switch >
+		<assign out="$myLog" value="$TargedNoCode" />
+		<if cond="$WriteLog">
+			<call name="LogWrite" />
+		</if>
 		<pbx-xfer e164="$TargedNoCode" />
+	</function>  
+	<function define="LogWrite">
+		<store-getstat root="Log" name="/" out-error="$error"/>
+        	<if cond="$error">
+            		<store-mkdir root="" name="Log/"/> 
+        	</if>
+		<store-getstat name="NULL" out-mday="$mday" out-mon="$mon" out-year="$year" out-hour="$hour" out-min="$min" /> 
+		<lib-strlen out="$res" string="$mday"/>
+		<switch var="$res">
+			<case equal="1">
+				<lib-strcat string="0" string2="$mday" out-string="$mday" />
+  			</case>
+		</switch>
+		<lib-strlen out="$res" string="$mon"/>
+		<switch var="$res">
+			<case equal="1">
+				<lib-strcat string="0" string2="$mon" out-string="$mon" />
+  			</case>
+		</switch>
+		<lib-strlen out="$res" string="$hour"/>
+		<switch var="$res">
+			<case equal="1">
+				<lib-strcat string="0" string2="$hour" out-string="$hour" />
+  			</case>
+		</switch>
+		<lib-strlen out="$res" string="$min"/>
+		<switch var="$res">
+			<case equal="1">
+				<lib-strcat string="0" string2="$min" out-string="$min" />
+  			</case>
+		</switch>
+ 		<lib-strcat string="$year" string2="_" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="$mon" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="_" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="$mday" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="_" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="$hour" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="_" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="$min" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="_" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="$myLog" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="_" out-string="$rctrl" />
+		<lib-strcat string="$rctrl" string2="$cgpn" out-string="$rctrl" />
+		<!-- lib-strcat string="$rctrl" string2=".txt" out-string="$rctrl" / -->
+		<store-cookie  root="Log" name="$rctrl" value="x"/>
+ 		<return /> 
 	</function>  
 	<function define="EnterPin">
 		<assign out="$dial-ok" value="false"/>
@@ -253,6 +312,15 @@
 		<lib-strlen out="$len" string="$cdpn"/> 
 	</function>  
 	<function define="CheckCode">
+		<if notcond="$CheckCaller">
+			<lib-strcat string="$cdpn" string2=".txt" out-string="$myFile" />
+			<store-getstat root="Codes/" name="$myFile" out-error="$error"/>
+			<if cond="$error">
+				<call name="NotokTrans" />
+			</if>
+			<call name="okTrans" />
+		</if>
+
 		<call name="BuildDir" />
 		<store-getstat root="$myRoot" name="$nib2" out-error="$error"/>
 		<assign out="$code" value="$cdpn"/>
@@ -274,4 +342,4 @@
 </voicemail>
 
 
-<!-- Learning PIN wiki-src/xml/LearnPIN 1,0,0,0 (C) innovaphone AG 2010-2017 -->
+<!-- Learning PIN wiki-src/xml/LearnPIN 1,0,1,0 (C) innovaphone AG 2010-2018 -->
