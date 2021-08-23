@@ -1,0 +1,277 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<voicemail>
+<!-- innovaphone Customer Number Self Learning == innovaphone AG kwa 2017 -->
+	
+	<function define="Switch">
+		<assign out="$TargedNoCode" value="21"/>
+		<assign out="$TargedCodeOK" value="36"/>
+		<assign out="$WellKnown" value="36"/>
+		<assign out="$CodeLength" value="6"/>
+		<assign out="$SetupCode" value="*"/>
+		<assign out="$MarkDigit" value="#"/>
+	</function>  
+
+	<function define="Main">
+		<call name="Switch" />
+		<pbx-getcallinfo out-cgpn="$cgpn" out-cdpn="$cdpn" out-leg2="$leg2" />
+		<switch var="$cdpn">
+			<case equal="$SetupCode">
+				<call name="Setup" />  
+				<pbx-disc /> 
+			</case> 
+		</switch>
+		<lib-strcat string="$cgpn" string2=".txt" out-string="$CallerID" />
+		<store-getstat root="WellKnown" name="$CallerID" out-error="$error"/>
+		<if notcond="$error">
+	            <pbx-xfer e164="$WellKnown" />
+        	</if>
+		<call name="CheckCaller" />  
+		<assign out="$SndTry" value="True"/>
+		<call name="EnterCode" />  
+		<call name="CheckCode" />  
+		<assign out="$cdpn" value=""/>
+		<call name="EnterCode" />  
+		<call name="CheckCode" />  
+		<pbx-disc /> 
+	</function>  
+	<function define="Setup">
+		<event type="timer" name="TimeOut">
+			<pbx-disc /> 
+	  	</event>
+		<timer name="TimeOut" sec="50"/>
+		<event type="dtmf" block="false">
+			<assign out="$cdpn" value=""/>	
+			<timer name="TimeOut" sec="50"/>
+			<pbx-getdtmfdigit out-dtmf="$sdtmf" /> 
+			<switch var="$sdtmf">
+				<case equal="1">
+					<store-get root="" name="Track8.g711a" out-url="$ctrl" /> 
+					<call name="NewPin" />
+				</case>
+				<case equal="2">
+					<store-get root="" name="Track8.g711a" out-url="$ctrl" /> 
+					<call name="DelPin" />
+				</case>
+				<case equal="3">
+					<store-get root="" name="Track8.g711a" out-url="$ctrl" /> 
+					<call name="ChkPin" />
+				</case>
+				<case equal="4">
+					<store-get root="" name="Track8.g711a" out-url="$ctrl" /> 
+					<call name="ClrPin" />
+				</case>
+				<case equal="5">
+					<store-get root="" name="Track9.g711a" out-url="$ctrl" /> 
+					<call name="ClrNum" />
+				</case>
+ 			 </switch>
+  		</event>
+		<while notcond="$timout-ok">
+			<store-get root="" name="Track2.g711a" out-url="$ctrl" /> 
+			<pbx-prompt url="$ctrl" repeat="false" />
+  		</while>
+	</function>  
+	<function define="ClrPin">
+		<call name="EnterPin" />
+		<call name="BuildDir" />
+		<switch var="$len">
+			<case equal="$CodeLength">	
+				<store-rmdir root="$myRoot" name="$nib2"/> 
+				<store-mkdir root="$myRoot" name="$nib2"/> 
+				<store-get root="" name="Track4.g711a" out-url="$ctrl" /> 
+				<pbx-prompt url="$ctrl" repeat="false" />
+			</case>
+			<case not-equal="$CodeLength">	
+				<store-get root="" name="Track3.g711a" out-url="$ctrl" /> 
+				<pbx-prompt url="$ctrl" repeat="false" />
+			</case>
+		</switch>
+	</function> 
+	<function define="ClrNum">
+		<call name="EnterNum" />
+		<lib-strcat string="$cdpn" string2=".txt" out-string="$CallerID" />
+		<store-getstat root="Caller" name="$CallerID" out-error="$error"/>
+		<if notcond="$error">
+			<store-cookie  root="Caller" name="$CallerID" out="$Code"/>
+			<index out="$nib1" value="$Code" pos="1" size="2"/>
+			<index out="$nib2" value="$Code" pos="3" size="8"/>
+			<lib-strcat string="Codes/" string2="$nib1" out-string="$myRoot" />
+			<lib-strcat string="$myRoot" string2="/" out-string="$myRoot" />
+			<lib-strcat string="$myRoot" string2="$nib2" out-string="$myRoot" />		     
+			<store-del root="$myRoot" name="$CallerID"/> 
+			<store-del root="Caller" name="$CallerID"/> 
+        	</if>
+		<store-get root="" name="Track7.g711a" out-url="$ctrl" /> 
+		<pbx-prompt url="$ctrl" repeat="false" />
+	</function> 
+	<function define="NewPin">
+		<call name="EnterPin" />
+		<call name="BuildDir" />
+		<switch var="$len">
+			<case equal="$CodeLength">	
+				<store-mkdir root="Codes" name="$nib1"/>
+				<store-mkdir root="$myRoot" name="$nib2"/> 
+				<store-get root="" name="Track4.g711a" out-url="$ctrl" /> 
+				<pbx-prompt url="$ctrl" repeat="false" />
+			</case>
+			<case not-equal="$CodeLength">	
+				<store-get root="" name="Track3.g711a" out-url="$ctrl" /> 
+				<pbx-prompt url="$ctrl" repeat="false" />
+			</case>
+		</switch>
+	</function> 
+	<function define="DelPin">
+		<call name="EnterPin" />
+		<call name="BuildDir" />
+		<switch var="$len">
+			<case equal="$CodeLength">	
+				<store-rmdir root="$myRoot" name="$nib2"/> 
+				<store-get root="" name="Track6.g711a" out-url="$ctrl" /> 
+				<pbx-prompt url="$ctrl" repeat="false" />
+			</case>
+			<case not-equal="$CodeLength">	
+				<store-get root="" name="Track3.g711a" out-url="$ctrl" /> 
+				<pbx-prompt url="$ctrl" repeat="false" />
+			</case>
+		</switch>
+	</function> 
+	<function define="ChkPin">
+		<call name="EnterPin" />
+		<call name="BuildDir" />
+		<store-getstat root="$myRoot" name="$nib2" out-error="$error"/>
+		<store-get root="" name="Track4.g711a" out-url="$ctrl" /> 
+		<if cond="$error">
+			<store-get root="" name="Track5.g711a" out-url="$ctrl" /> 
+        	</if>
+		<pbx-prompt url="$ctrl" repeat="false" />
+	</function> 
+	<function define="CheckCaller">
+		<store-getstat root="Caller" name="$CallerID" out-error="$error"/>
+		<if cond="$error">
+		      <return /> 
+        	</if>
+		<store-cookie  root="Caller" name="$CallerID" out="$Code"/>
+		<index out="$nib1" value="$Code" pos="1" size="2"/>
+		<index out="$nib2" value="$Code" pos="3" size="8"/>
+		<lib-strcat string="Codes/" string2="$nib1" out-string="$myRoot" />
+		<lib-strcat string="$myRoot" string2="/" out-string="$myRoot" />
+		<lib-strcat string="$myRoot" string2="$nib2" out-string="$myRoot" />
+		<store-getstat root="$myRoot" name="$CallerID" out-error="$error"/>
+		<if cond="$error">
+		      <store-del root="Caller" name="$CallerID"/> 
+		      <return /> 
+        	</if>
+		<lib-strcat string="$code" string2="$MarkDigit" out-string="$code" />
+		<call name="okTrans" />
+	</function>  
+	<function define="okTrans">	
+		<lib-strcat string="$cgpn" string2="#" out-string="$cgpn" />
+		<lib-strcat string="$cgpn" string2="$code" out-string="$cgpn" />
+		<pbx-prepcallinfo cgpn="$cgpn" />
+		<pbx-xfer e164="$TargedCodeOK" />
+	</function>  
+	<function define="NotokTrans">	
+		<switch var="$cdpn" >
+			<case not-equal="" >
+				<lib-strcat string="$cgpn" string2="#" out-string="$cgpn" />
+				<lib-strcat string="$cgpn" string2="$MarkDigit" out-string="$cgpn" />
+				<lib-strcat string="$cgpn" string2="$cdpn" out-string="$cgpn" />
+				<pbx-prepcallinfo cgpn="$cgpn" />
+			</case >
+		</switch >
+		<pbx-xfer e164="$TargedNoCode" />
+	</function>  
+	<function define="EnterPin">
+		<assign out="$dial-ok" value="false"/>
+		<event type="timer" name="EndOfDial">
+			<assign out="$dial-ok" value="true"/>
+			<return /> 
+	  	</event>
+		<timer name="EndOfDial" sec="15"/>
+		<event type="dtmf" block="false">
+			<timer name="EndOfDial" sec="5"/>
+			<pbx-getdtmfdigit out-dtmf="$dtmf" /> 
+			<switch var="$dtmf">
+				<case equal="#">
+					<assign out="$dial-ok" value="true"/>
+	  				<return /> 
+				</case>
+ 			 </switch>
+  			 <lib-strcat string="$cdpn" string2="$dtmf" out-string="$cdpn" />
+			 <lib-strlen out="$len" string="$cdpn"/> 
+		 	 <switch var="$len">
+			 	<case equal="$CodeLength">	
+					<assign out="$dial-ok" value="true"/>
+			  		<return /> 	
+				</case>
+			 </switch>
+   		</event>
+		<pbx-prompt url="$ctrl" repeat="false" /> 
+		<while notcond="$dial-ok">
+  			<store-get root="" name="silence.g711a" out-url="$ctrl" /> 
+  			<pbx-prompt url="$ctrl" sec="5" repeat="true" /> 
+		</while>
+	</function>  
+	<function define="EnterNum">
+		<assign out="$dial-ok" value="false"/>
+		<event type="timer" name="EndOfDial">
+			<assign out="$dial-ok" value="true"/>
+			<return /> 
+	  	</event>
+		<timer name="EndOfDial" sec="5"/>
+		<event type="dtmf" block="false">
+			<timer name="EndOfDial" sec="5"/>
+			<pbx-getdtmfdigit out-dtmf="$dtmf" /> 
+			<switch var="$dtmf">
+				<case equal="#">
+					<assign out="$dial-ok" value="true"/>
+	  				<return /> 
+				</case>
+ 			 </switch>
+  			 <lib-strcat string="$cdpn" string2="$dtmf" out-string="$cdpn" />
+		</event>
+		<pbx-prompt url="$ctrl" repeat="false" /> 
+		<while notcond="$dial-ok">
+  			<store-get root="" name="silence.g711a" out-url="$ctrl" /> 
+  			<pbx-prompt url="$ctrl" sec="5" repeat="true" /> 
+		</while>
+	</function>  
+	<function define="EnterCode">
+		<store-get root="" name="Track1.g711a" out-url="$ctrl" /> 
+		<call name="EnterPin" />  
+		<lib-strlen out="$len" string="$cdpn"/> 
+		<switch var="$len" >
+			<case not-equal="$CodeLength" >	
+				<call name="NotokTrans" />
+			</case >
+		 </switch >
+	</function>  
+	<function define="BuildDir">
+		<index out="$nib1" value="$cdpn" pos="1" size="2"/>
+		<index out="$nib2" value="$cdpn" pos="3" size="8"/>
+		<lib-strcat string="Codes/" string2="$nib1" out-string="$myRoot" />
+		<lib-strlen out="$len" string="$cdpn"/> 
+	</function>  
+	<function define="CheckCode">
+		<call name="BuildDir" />
+		<store-getstat root="$myRoot" name="$nib2" out-error="$error"/>
+		<assign out="$code" value="$cdpn"/>
+		<if cond="$error">
+			<if cond="$SndTry">
+				<assign out="$SndTry" value=""/>
+				<store-get root="" name="Track3.g711a" out-url="$ctrl" />
+				<pbx-prompt url="$ctrl" repeat="false" /> 
+				 <return/>
+			</if>
+			<call name="NotokTrans" />
+		</if>
+		<lib-strcat string="$myRoot" string2="/" out-string="$myRoot" />
+		<lib-strcat string="$myRoot" string2="$nib2" out-string="$myRoot" />
+		<store-cookie  root="$myRoot" name="$CallerID" value="$cdpn"/>		
+		<store-cookie  root="Caller" name="$CallerID" value="$cdpn"/>
+		<call name="okTrans" />		
+	</function>  
+</voicemail>
+
+
+<!-- Learning PIN wiki-src/xml/LearnPIN 1,0,0,0 (C) innovaphone AG 2010-2017 -->
