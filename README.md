@@ -1,2 +1,2 @@
 # learnpin
-http://wiki.innovaphone.com/index.php?title=Howto:Learning_PIN_code
+https://wiki.innovaphone.com/index.php?title=Howto:Learning_PIN_code
